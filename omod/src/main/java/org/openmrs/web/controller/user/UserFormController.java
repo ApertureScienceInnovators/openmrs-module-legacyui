@@ -34,6 +34,9 @@ import org.openmrs.util.PrivilegeConstants;
 import org.openmrs.validator.UserValidator;
 import org.openmrs.web.WebConstants;
 import org.openmrs.web.user.UserProperties;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
@@ -55,6 +58,8 @@ public class UserFormController {
 	
 	protected static final Log log = LogFactory.getLog(UserFormController.class);
 	
+	protected static final Logger logger = LoggerFactory.getLogger( "org.openmrs.api" );
+	
 	@Autowired
 	private UserValidator userValidator;
 	
@@ -65,6 +70,9 @@ public class UserFormController {
 	public void initBinder(WebDataBinder binder) {
 		binder.registerCustomEditor(Role.class, new RoleEditor());
 	}
+	
+	
+	
 	
 	// the personId attribute is called person_id so that spring MVC doesn't try to bind it to the personId property of user
 	@ModelAttribute("user")
@@ -108,7 +116,8 @@ public class UserFormController {
 			@RequestParam(required = false, value = "userId") Integer userId, 
 			@RequestParam(required = false, value = "createNewPerson") String createNewPerson, 
 			@ModelAttribute("user") User user, ModelMap model) {
-		
+	    
+
 		// the formBackingObject method above sets up user, depending on userId and personId parameters   
 		
 		model.addAttribute("isNewUser", isNewUser(user));
@@ -153,10 +162,13 @@ public class UserFormController {
 	        @RequestParam(required = false, value = "createNewPerson") String createNewPerson, 
 	        @RequestParam(required = false, value = "providerCheckBox") String addToProviderTableOption,
 	        @ModelAttribute("user") User user, BindingResult errors) {
-		
+  
+	    
+
 		UserService us = Context.getUserService();
 		MessageSourceService mss = Context.getMessageSourceService();
 		
+
 		if (!Context.isAuthenticated()) {
 			errors.reject("auth.invalid");
 		} else if (mss.getMessage("User.assumeIdentity").equals(action)) {
@@ -183,6 +195,7 @@ public class UserFormController {
 				return showForm(user.getUserId(), createNewPerson, user, model);
 			} else {
 				us.retireUser(user, retireReason);
+				
 				httpSession.setAttribute(WebConstants.OPENMRS_MSG_ATTR, "User.retiredMessage");
 			}
 			
@@ -269,7 +282,13 @@ public class UserFormController {
 			
 			userValidator.validate(user, errors);
 			
+			boolean newUser = isNewUser(user);
+						
 			if (errors.hasErrors()) {
+			    		    
+			    String userAction = newUser ? "creating" : "updating";
+			    		    
+			    logger.info("Error occurred while " + userAction + " user: " + user);
 				return showForm(user.getUserId(), createNewPerson, user, model);
 			}
 			
