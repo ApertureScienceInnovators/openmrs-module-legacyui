@@ -11,6 +11,8 @@ package org.openmrs.web.controller.user;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.openmrs.Role;
 import org.openmrs.User;
 import org.openmrs.api.context.Context;
@@ -34,6 +36,8 @@ public class UserListController {
 	/** Logger for this class and subclasses */
 	protected final Log log = LogFactory.getLog(getClass());
 	
+    protected static final Logger logger = LoggerFactory.getLogger( "org.openmrs.api" );
+	
 	/**
 	 * @should get users just given action parameter
 	 * @should get all users if no name given
@@ -45,7 +49,7 @@ public class UserListController {
 	        @RequestParam(value = "name", required = false) String name,
 	        @RequestParam(value = "role", required = false) Role role,
 	        @RequestParam(value = "includeDisabled", required = false) Boolean includeDisabled) throws Exception {
-		
+			    
 		if (Context.isAuthenticated()) {
 			List<User> users = getUsers(action, name, role, includeDisabled);
 			Map<User, Set<Role>> userRolesMap = new HashMap<User, Set<Role>>(users.size());
@@ -93,6 +97,22 @@ public class UserListController {
 			model.put("role", role);
 			model.put("userInheritanceLineMap", userInheritanceLineMap);
 			model.put("userRolesMap", userRolesMap);
+			
+	        String log;
+	        String roleString = null==role?"":role.toString();
+	        if(isEmpty(name) && isEmpty(roleString)) {
+	            log = "Viewed list of all users";
+	        }
+	        else if(isEmpty(name)) {
+	            log = "Viewed list of users with role " + roleString;
+	        }
+	        else if(isEmpty(roleString)) {
+	            log = "Viewed list of users with partial name " + name;
+	        }
+	        else {
+	            log = "Viewed list of users with role " + roleString + " and partial name " + name;
+	        }
+	        logger.info( log );
 		}
 		return "module/legacyui/admin/users/users";
 	}
@@ -117,6 +137,10 @@ public class UserListController {
 		
 		return new ArrayList<User>();
 		
+	}
+	
+	private boolean isEmpty(String s) {
+	    return null==s || s.equals("");
 	}
 	
 }
